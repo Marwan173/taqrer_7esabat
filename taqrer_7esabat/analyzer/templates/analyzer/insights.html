@@ -1,0 +1,152 @@
+{% extends 'analyzer/base.html' %}
+{% load static %}
+
+{% block title %}التحليلات التفصيلية - تقرير حسابات{% endblock %}
+{% block page_title %}التحليلات التفصيلية{% endblock %}
+
+{% block content %}
+<div id="insights-root" data-analysis-id="{{ analysis_id }}">
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 border-top border-primary border-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-book-open text-primary ms-2"></i>الملخص التنفيذي</h5>
+                </div>
+                <div class="card-body fs-5" id="insight-narrative">
+                    جاري التحميل...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 border-top border-info border-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-table text-info ms-2"></i>جودة البيانات</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0" id="quality-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>المعيار</th>
+                                    <th>القيمة</th>
+                                    <th>النسبة</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="mb-3"><i class="fas fa-lightbulb text-warning ms-2"></i>التوصيات والملاحظات</h5>
+            <div class="row" id="detailed-insights-container">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const root = document.getElementById('insights-root');
+    if (!root) return;
+    
+    const analysisId = root.dataset.analysisId;
+    if (!analysisId) return;
+
+    const loadingOverlay = document.getElementById('loading-overlay');
+    loadingOverlay.classList.add('active');
+
+    fetch(`/analyzer/api/insights/${analysisId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Narrative
+            const navEl = document.getElementById('insight-narrative');
+            if (navEl && data.narrative) {
+                navEl.innerHTML = `<p class="mb-0">${data.narrative}</p>`;
+            }
+
+            // Quality
+            const qTableBody = document.querySelector('#quality-table tbody');
+            if (qTableBody && data.quality) {
+                qTableBody.innerHTML = '';
+                for (const [key, val] of Object.entries(data.quality)) {
+                    let statusClass = 'bg-secondary';
+                    let statusText = 'عادي';
+                    
+                    if (val.ratio !== undefined) {
+                        if (val.ratio < 5) {
+                            statusClass = 'bg-success'; statusText = 'ممتاز';
+                        } else if (val.ratio < 15) {
+                            statusClass = 'bg-warning text-dark'; statusText = 'جيد';
+                        } else {
+                            statusClass = 'bg-danger'; statusText = 'انتباه';
+                        }
+                    }
+
+                    qTableBody.innerHTML += `
+                        <tr>
+                            <td>${val.label || key}</td>
+                            <td>${val.value || 0}</td>
+                            <td>${val.ratio !== undefined ? val.ratio + '%' : '-'}</td>
+                            <td><span class="badge ${statusClass}">${statusText}</span></td>
+                        </tr>
+                    `;
+                }
+            }
+
+            // Insights
+            const insightsContainer = document.getElementById('detailed-insights-container');
+            if (insightsContainer && data.insights) {
+                insightsContainer.innerHTML = '';
+                data.insights.forEach(insight => {
+                    const typeMap = {
+                        'positive': { color: 'success', icon: 'check-circle' },
+                        'negative': { color: 'danger', icon: 'exclamation-circle' },
+                        'neutral': { color: 'info', icon: 'info-circle' },
+                        'warning': { color: 'warning', icon: 'exclamation-triangle' }
+                    };
+                    const style = typeMap[insight.type] || typeMap['neutral'];
+                    
+                    insightsContainer.innerHTML += `
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100 shadow-sm border-0 border-start border-${style.color} border-4">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="rounded-circle bg-${style.color} text-white p-2 d-flex justify-content-center align-items-center me-2 ms-3" style="width: 40px; height: 40px;">
+                                            <i class="fas fa-${style.icon}"></i>
+                                        </div>
+                                        <h6 class="mb-0 fw-bold">${insight.title}</h6>
+                                    </div>
+                                    <p class="text-muted mb-2 small"><span class="badge bg-light text-dark border">${insight.category || 'عام'}</span></p>
+                                    <p class="card-text">${insight.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching insights:', err);
+        })
+        .finally(() => {
+            loadingOverlay.classList.remove('active');
+        });
+});
+</script>
+{% endblock %}

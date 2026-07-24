@@ -1,0 +1,59 @@
+{% extends 'analyzer/base.html' %}
+{% load static %}
+
+{% block title %}سجل الملفات - تقرير حسابات{% endblock %}
+{% block page_title %}سجل الملفات{% endblock %}
+
+{% block content %}
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        {% if uploads %}
+        <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>اسم الملف</th>
+                        <th>الحجم</th>
+                        <th>الحالة</th>
+                        <th>تاريخ الرفع</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for upload in uploads %}
+                    <tr>
+                        <td><i class="fas fa-file-excel text-success ms-2"></i>{{ upload.filename }}</td>
+                        <td>{{ upload.size|filesizeformat }}</td>
+                        <td>
+                            {% if upload.status == 'completed' %}
+                            <span class="badge bg-success">مكتمل</span>
+                            {% elif upload.status == 'error' %}
+                            <span class="badge bg-danger">خطأ</span>
+                            {% else %}
+                            <span class="badge bg-warning text-dark">جاري المعالجة</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ upload.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>
+                            {% if upload.status == 'completed' %}
+                            <a href="{% url 'dashboard' upload.id %}" class="btn btn-sm btn-primary">عرض التحليل</a>
+                            {% else %}
+                            <button class="btn btn-sm btn-secondary" disabled>غير متاح</button>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center p-5">
+            <i class="fas fa-folder-open fa-4x text-muted mb-3 opacity-50"></i>
+            <h5>لا يوجد ملفات في السجل</h5>
+            <p class="text-muted">قم برفع ملفك الأول لتبدأ التحليل</p>
+            <a href="{% url 'upload' %}" class="btn btn-primary mt-2"><i class="fas fa-plus ms-2"></i>رفع ملف جديد</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

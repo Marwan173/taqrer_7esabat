@@ -1,0 +1,96 @@
+{% extends 'analyzer/base.html' %}
+{% load static %}
+
+{% block title %}لوحة التحكم - تقرير حسابات{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+
+{% block content %}
+<div id="dashboard-root" data-analysis-id="{{ analysis_id }}">
+    
+    <!-- Section 1: Narrative Summary -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div id="narrative-card" class="card shadow-md border-0 narrative-gradient text-white">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <i class="fas fa-quote-right fa-3x me-4 ms-4 opacity-50"></i>
+                    <div id="narrative-text" class="fs-4">
+                        جاري تحميل الملخص...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: Data Quality -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div id="quality-bar" class="alert bg-white shadow-sm d-flex align-items-center justify-content-between p-3 border-start border-info border-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-shield-alt text-info fs-4 ms-3"></i>
+                    <h6 class="mb-0 fw-bold">جودة البيانات</h6>
+                </div>
+                <div id="quality-badges" class="d-flex gap-2 flex-wrap">
+                    <!-- Badges populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Filter Bar -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body py-3">
+                    <form id="filter-form" class="row g-3 align-items-center">
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">من تاريخ</label>
+                            <input type="date" class="form-control form-control-sm" id="filter-date-from" name="start_date">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">إلى تاريخ</label>
+                            <input type="date" class="form-control form-control-sm" id="filter-date-to" name="end_date">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">التصنيف</label>
+                            <select class="form-select form-select-sm" id="filter-category" name="category">
+                                <option value="">الكل</option>
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-sm flex-grow-1">تطبيق</button>
+                            <button type="button" id="reset-filters" class="btn btn-outline-secondary btn-sm flex-grow-1">إعادة تعيين</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 4: KPI Cards -->
+    <div id="kpi-container" class="row mb-4">
+        <!-- Populated by JS -->
+    </div>
+
+    <!-- Section 5: Charts -->
+    <div id="charts-container" class="row mb-4">
+        <!-- Populated by JS -->
+    </div>
+
+    <!-- Section 6: Insights -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-lightbulb text-warning ms-2"></i>أهم الملاحظات</h4>
+            <div id="insights-container" class="row">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'analyzer/js/charts.js' %}"></script>
+<script src="{% static 'analyzer/js/dashboard.js' %}"></script>
+{% endblock %}

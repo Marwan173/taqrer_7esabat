@@ -1,0 +1,86 @@
+{% extends 'analyzer/base.html' %}
+{% load static %}
+
+{% block title %}رفع ملف جديد - تقرير حسابات{% endblock %}
+{% block page_title %}رفع ملف جديد{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-5">
+                <form id="upload-form" action="{% url 'upload' %}" method="POST" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <div id="dropzone" class="upload-dropzone text-center p-5 rounded">
+                        <i class="fas fa-cloud-upload-alt fa-4x text-primary mb-3 animated-icon"></i>
+                        <h4 class="mb-2">اسحب الملف هنا أو اضغط للاختيار</h4>
+                        <p class="text-muted mb-0">الصيغ المدعومة: xlsx, xls — الحد الأقصى: 50 ميجابايت</p>
+                        <input type="file" id="file-input" name="file" class="d-none" accept=".xlsx, .xls">
+                    </div>
+                </form>
+
+                <div id="progress-container" class="mt-4" style="display: none;">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span id="progress-text">جاري رفع الملف...</span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </div>
+
+                <div id="error-container" class="alert alert-danger mt-4" style="display: none;"></div>
+            </div>
+        </div>
+
+        {% if recent_uploads %}
+        <div class="card shadow-sm">
+            <div class="card-header bg-white">
+                <h5 class="m-0"><i class="fas fa-history ms-2 text-primary"></i>الملفات الأخيرة</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>اسم الملف</th>
+                                <th>الحجم</th>
+                                <th>الحالة</th>
+                                <th>التاريخ</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for upload in recent_uploads %}
+                            <tr>
+                                <td>{{ upload.filename }}</td>
+                                <td>{{ upload.size|filesizeformat }}</td>
+                                <td>
+                                    {% if upload.status == 'completed' %}
+                                    <span class="badge bg-success">مكتمل</span>
+                                    {% elif upload.status == 'error' %}
+                                    <span class="badge bg-danger">خطأ</span>
+                                    {% else %}
+                                    <span class="badge bg-warning text-dark">جاري المعالجة</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ upload.created_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    {% if upload.status == 'completed' %}
+                                    <a href="{% url 'dashboard' upload.id %}" class="btn btn-sm btn-outline-primary">عرض التحليل</a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'analyzer/js/upload.js' %}"></script>
+{% endblock %}
