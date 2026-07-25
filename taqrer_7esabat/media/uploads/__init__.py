@@ -1,1 +1,0 @@
-# Media uploads directory init
