@@ -1,0 +1,171 @@
+{% extends 'analyzer/base.html' %}
+{% load static %}
+
+{% block title %}التحليلات التفصيلية - تقرير حسابات{% endblock %}
+{% block page_title %}التحليلات التفصيلية{% endblock %}
+
+{% block content %}
+<div id="insights-root" data-analysis-id="{{ analysis_id }}">
+
+    <!-- Executive Summary Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-md border-0 narrative-gradient text-white rounded-4 overflow-hidden">
+                <div class="card-body p-4 d-flex align-items-center">
+                    <div class="bg-white bg-opacity-20 rounded-circle p-3 ms-4 me-2 d-none d-sm-flex align-items-center justify-content-center flex-shrink-0" style="width: 60px; height: 60px;">
+                        <i class="fas fa-book-open fa-2x text-white"></i>
+                    </div>
+                    <div>
+                        <div class="text-white-50 small fw-bold mb-1 text-uppercase"><i class="fas fa-microchip me-1"></i>الملخص التنفيذي للمحلل</div>
+                        <p class="mb-0 fs-5 fw-semibold" id="insight-narrative">جاري التحميل...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Quality Table -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header border-bottom py-3 d-flex align-items-center">
+                    <div class="bg-info-subtle text-info rounded-circle p-2 ms-3 me-1 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                        <i class="fas fa-table fs-6"></i>
+                    </div>
+                    <h6 class="mb-0 fw-bold">جودة البيانات — تفصيلي</h6>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="quality-table">
+                            <thead>
+                                <tr>
+                                    <th>المعيار</th>
+                                    <th>القيمة</th>
+                                    <th>النسبة</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Insights -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h5 class="mb-3 fw-bold d-flex align-items-center">
+                <i class="fas fa-lightbulb text-warning ms-2"></i>التوصيات والملاحظات التفصيلية
+            </h5>
+            <div class="row" id="detailed-insights-container">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const root = document.getElementById('insights-root');
+    if (!root) return;
+    
+    const analysisId = root.dataset.analysisId;
+    if (!analysisId) return;
+
+    const loadingOverlay = document.getElementById('loading-overlay');
+    if (loadingOverlay) loadingOverlay.classList.add('active');
+
+    fetch(`/analyzer/api/insights/${analysisId}/`)
+        .then(response => response.json())
+        .then(data => {
+            // Narrative
+            const navEl = document.getElementById('insight-narrative');
+            if (navEl && data.narrative) {
+                navEl.textContent = data.narrative;
+            }
+
+            // Quality Table
+            const qTableBody = document.querySelector('#quality-table tbody');
+            if (qTableBody && data.quality) {
+                qTableBody.innerHTML = '';
+                for (const [key, val] of Object.entries(data.quality)) {
+                    let badgeClass = 'bg-secondary-subtle text-secondary border border-secondary-subtle';
+                    let statusText = 'عادي';
+                    
+                    if (val.ratio !== undefined) {
+                        if (val.ratio < 5) {
+                            badgeClass = 'bg-success-subtle text-success border border-success-subtle';
+                            statusText = 'ممتاز';
+                        } else if (val.ratio < 15) {
+                            badgeClass = 'bg-warning-subtle text-warning border border-warning-subtle';
+                            statusText = 'جيد';
+                        } else {
+                            badgeClass = 'bg-danger-subtle text-danger border border-danger-subtle';
+                            statusText = 'يحتاج مراجعة';
+                        }
+                    }
+
+                    qTableBody.innerHTML += `
+                        <tr>
+                            <td class="fw-semibold">${val.label || key}</td>
+                            <td>${val.value || 0}</td>
+                            <td>${val.ratio !== undefined ? val.ratio + '%' : '—'}</td>
+                            <td><span class="badge ${badgeClass} rounded-pill px-3 py-2">${statusText}</span></td>
+                        </tr>
+                    `;
+                }
+            }
+
+            // Insights Cards
+            const insightsContainer = document.getElementById('detailed-insights-container');
+            if (insightsContainer && data.insights) {
+                insightsContainer.innerHTML = '';
+                const typeMap = {
+                    'positive': { color: 'success', icon: 'check-circle' },
+                    'negative': { color: 'danger', icon: 'exclamation-circle' },
+                    'neutral':  { color: 'info',    icon: 'info-circle' },
+                    'warning':  { color: 'warning', icon: 'exclamation-triangle' },
+                    'success':  { color: 'success', icon: 'check-circle' },
+                    'danger':   { color: 'danger',  icon: 'exclamation-circle' },
+                    'info':     { color: 'info',    icon: 'info-circle' },
+                    'primary':  { color: 'primary', icon: 'lightbulb' },
+                };
+
+                data.insights.forEach(insight => {
+                    const styleKey = insight.color || insight.type || 'primary';
+                    const style = typeMap[styleKey] || typeMap['primary'];
+                    const icon = insight.icon || style.icon;
+                    
+                    insightsContainer.innerHTML += `
+                        <div class="col-md-6 mb-4 fade-in">
+                            <div class="insight-card border-start border-${style.color} border-4">
+                                <div class="insight-icon bg-${style.color}">
+                                    <i class="fas fa-${icon}"></i>
+                                </div>
+                                <div class="insight-content">
+                                    <div class="insight-category">${insight.category || 'تحليل'}</div>
+                                    <h6>${insight.title}</h6>
+                                    <p class="mb-0 text-muted small">${insight.description}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+        })
+        .catch(err => {
+            console.error('Error fetching insights:', err);
+        })
+        .finally(() => {
+            if (loadingOverlay) loadingOverlay.classList.remove('active');
+        });
+});
+</script>
+{% endblock %}

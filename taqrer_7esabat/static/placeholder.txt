@@ -1,0 +1,1 @@
+/* Project global static files */
